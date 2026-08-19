@@ -1,0 +1,88 @@
+"""
+config.py
+
+项目配置与 Tortoise ORM 配置。
+"""
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+class Settings(BaseSettings):
+    """环境变量配置。"""
+
+    # App
+    APP_NAME: str = "百战智能运营平台"
+    APP_VERSION: str = "1.0.0"
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
+
+    # Database
+    DATABASE_URL: str = "sqlite://db.sqlite3"
+
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # JWT
+    JWT_SECRET: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXP_SECONDS: int = 3600
+
+    # LLM
+    LLM_API_KEY: str = ""
+    LLM_BASE_URL: str = "https://api.deepseek.com/v1"
+    LLM_MODEL: str = "deepseek-chat"
+    LLM_MOCK: bool = False
+    LLM_TIMEOUT: int = 60
+
+    # OSS
+    OSS_ENDPOINT: str = ""
+    OSS_ACCESS_KEY_ID: str = ""
+    OSS_ACCESS_KEY_SECRET: str = ""
+    OSS_BUCKET: str = ""
+
+    # XiaoHongShu
+    XIAOHONGSHU_APP_ID: str = ""
+    XIAOHONGSHU_APP_SECRET: str = ""
+    XIAOHONGSHU_MOCK: bool = True
+
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR.parent / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+SETTINGS = get_settings()
+
+
+# Tortoise ORM 配置（FastAPI + Aerich 共用）
+TORTOISE_ORM = {
+    "connections": {"default": SETTINGS.DATABASE_URL},
+    "apps": {
+        "models": {
+            "models": ["app.models", "aerich.models"],
+            "default_connection": "default",
+        }
+    },
+}
+
+# Celery 配置
+CELERY_CONFIG = {
+    "broker_url": SETTINGS.REDIS_URL,
+    "result_backend": SETTINGS.REDIS_URL,
+    "task_serializer": "json",
+    "accept_content": ["json"],
+    "result_serializer": "json",
+    "timezone": "Asia/Shanghai",
+    "enable_utc": True,
+}
