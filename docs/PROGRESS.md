@@ -1,6 +1,6 @@
 # 百战智能运营平台 — 开发进度报告
 
-> 报告时间：2026-08-19 21:04
+> 报告时间：2026-08-19 21:45
 > 项目路径：`D:/ai agent学习/rag/bai-zhan-ai-platform/`
 > GitHub：`https://github.com/alecemlurui/bai-zhan-ai-platform`
 > 本报告不含任何 API Key / JWT Secret / 数据库凭证。
@@ -27,6 +27,7 @@
 | H. 前端示例 | ⏳ 未开始 | 仅提供 OpenAPI/Postman |
 | I. 部署/监控 | ⏳ 未开始 | Docker 已提供，K8s/监控待补 |
 | J. 代码质量与 CI | ✅ 基线完成 | black/isort/flake8/mypy/bandit 配置通过；ci_check 脚本可用 |
+| K. 真实 LLM 接入 | ✅ Phase 1 完成 | LLMClient 增强：重试、超时、计费、异常分类；Agent prompt 结构化；新增集成测试 10 个 |
 
 ---
 
@@ -86,7 +87,56 @@ pytest: 10 passed in ~9s
 
 ---
 
-## 4. 已知阻塞与环境问题
+## 4. Phase 1：真实 LLM 接入（已完成）
+
+### 4.1 LLMClient 增强（`backend/app/services/llm_client.py`）
+
+- **结构化异常**：新增 `LLMError`、`LLMRateLimitError`、`LLMTimeoutError`、`LLMContentFilterError`、`LLMUnknownError`。
+- **指数退避重试**：`LLM_MAX_RETRIES`（默认 3）、`LLM_RETRY_BACKOFF`（默认 2.0），对 429 / 超时 / 网络错误自动重试。
+- **超时与连接错误**：区分 `httpx.TimeoutException`、`httpx.NetworkError`、`httpx.ConnectError`。
+- **Token 与费用估算**：返回 `prompt_tokens` / `completion_tokens` / `total_tokens` / `cost_usd`。
+- **JSON 输出**：新增 `chat_json()` 方法，支持 `response_format={"type": "json_object"}`。
+- **Mock 模式增强**：根据用户消息自动识别“标题生成”意图，返回结构化示例 JSON，便于无 Key 环境跑通 Agent 全链路。
+
+### 4.2 AgentRunner 增强（`backend/app/services/agent_runner.py`）
+
+- `generate_titles` 改为优先请求 JSON 返回，并自动回退到纯文本行解析。
+- 新增 `_build_title_prompt`、`_parse_title_json`、`_parse_title_text` 等辅助方法。
+- `generate_article` 支持 `rag_context`、`word_count`、`style` 参数，并在 `article.metadata` 中记录 token、费用、延迟、模型。
+- 捕获 `LLMError` 并记录结构化错误日志。
+
+### 4.3 配置扩展
+
+- `backend/app/config.py`：新增 `LLM_MAX_RETRIES`、`LLM_RETRY_BACKOFF`、`LLM_INPUT_PRICE_PER_1M`、`LLM_OUTPUT_PRICE_PER_1M`。
+- `.env.example`：同步新增对应变量，默认使用 DeepSeek 定价占位（设为 0 则不计算费用）。
+
+### 4.4 集成测试（`backend/tests/test_llm_integration.py`）
+
+新增 10 个测试用例，覆盖：
+
+- Mock 聊天与 JSON 聊天
+- 真实 HTTP 调用模拟（200 成功）
+- 429 触发重试后成功
+- 429 重试耗尽失败
+- 400 内容过滤异常
+- 超时异常
+- 未知异常
+- AgentRunner 生成标题与文章全链路
+
+### 4.5 Phase 1 验证结果
+
+```text
+black: 29 files would be left unchanged
+isort: Skipped 2 files
+flake8: 无错误
+mypy: Success: no issues found in 28 source files
+bandit: No issues identified. Medium: 0, High: 0
+pytest: 20 passed in ~20s
+```
+
+---
+
+## 5. 已知阻塞与环境问题
 
 | 问题 | 状态 | 说明 |
 | --- | --- | --- |
@@ -96,16 +146,16 @@ pytest: 10 passed in ~9s
 
 ---
 
-## 5. 代码提交与远程同步
+## 6. 代码提交与远程同步
 
-- 本地提交：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
+- Phase 0 提交：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
+- Phase 1 提交：待本次提交后更新
 - 已推送至：`git@github.com:alecemlurui/bai-zhan-ai-platform.git` 的 `main` 分支
-- 变更文件：21 files changed, 293 insertions(+), 39 deletions(-)
 - 未提交任何真实密钥；`.env` 已受 `.gitignore` 保护。
 
 ---
 
-## 6. 关键文件结构
+## 7. 关键文件结构
 
 ```text
 bai-zhan-ai-platform/
@@ -144,7 +194,7 @@ bai-zhan-ai-platform/
 
 ---
 
-## 7. 主要技术决策
+## 8. 主要技术决策
 
 - **密码哈希**：弃用 `passlib+bcrypt`（bcrypt 5.0 与 passlib 1.7.4 不兼容），改用标准库 `hashlib.pbkdf2_hmac`。
 - **JWT**：`sub` 声明使用字符串，避免 `python-jose` 的 `JWTClaimsError`。
@@ -155,12 +205,12 @@ bai-zhan-ai-platform/
 
 ---
 
-## 8. 待完善项（按优先级）
+## 9. 待完善项（按优先级）
 
 | 序号 | 事项 | 优先级 | 所属阶段 |
 | --- | --- | --- | --- |
-| 1 | 接入真实 LLM API（DeepSeek / OpenAI / Coze），替换 `LLM_MOCK` | 高 | Phase 1 |
-| 2 | 增强 LLM 客户端：重试、超时、token 计费、异常处理 | 高 | Phase 1 |
+| 1 | 接入真实 LLM API（DeepSeek / OpenAI / Coze），替换 `LLM_MOCK` | 高 | Phase 1 ✅ |
+| 2 | 增强 LLM 客户端：重试、超时、token 计费、异常处理 | 高 | Phase 1 ✅ |
 | 3 | 向量检索/RAG：Embedding + Chroma/FAISS + 文本分块 | 高 | Phase 2 |
 | 4 | 图片生成、阿里云 OSS 上传、本地回退 | 中 | Phase 3 |
 | 5 | 小红书账号绑定与发布 API（真实 SDK / mock） | 中 | Phase 3 |
@@ -171,36 +221,44 @@ bai-zhan-ai-platform/
 
 ---
 
-## 9. 下一步建议（Phase 1：真实 LLM 接入）
+## 10. 下一步建议（Phase 2：向量检索/RAG）
 
-建议按以下顺序推进 Phase 1：
+建议按以下顺序推进 Phase 2：
 
-1. **增强 `backend/app/services/llm_client.py`**：
-   - 添加 `httpx.AsyncClient` 超时与连接池配置。
-   - 实现指数退避重试（max 3 次）。
-   - 记录 token 使用量与估算费用到 task metadata。
-   - 统一异常分类：`LLMRateLimitError`、`LLMTimeoutError`、`LLMContentFilterError`、`LLMUnknownError`。
+1. **选择向量库**：
+   - 开发环境：Chroma（本地文件）或 FAISS（无服务端）。
+   - 生产环境：Weaviate / Milvus。
+   - 通过配置 `VECTOR_DB_URL` / `VECTOR_DB_TYPE` 切换。
 
-2. **强化 `backend/app/services/agent_runner.py`**：
-   - 为 `generate_titles` / `generate_article` 设计结构化 prompt 模板。
-   - 添加 JSON 输出解析与失败 fallback。
-   - 把检索上下文自动拼入 article prompt（预留 RAG 接口）。
+2. **新增 Embedding Service（`backend/app/services/embedding.py`）**：
+   - 本地 ONNX/BGE 模型或调用 OpenAI / 硅基流动等 Embedding API。
+   - 提供 `embed(texts: list[str]) -> list[list[float]]` 统一接口。
 
-3. **补充 `backend/tests/test_llm_integration.py`**：
-   - Mock LLM HTTP 响应，验证重试、超时、异常处理。
-   - 测试 `generate_titles` 在真实/Mock 模式下的输出格式。
+3. **新增 RAG Pipeline（`backend/app/services/rag.py`）**：
+   - 文本分块：按字数/重叠窗口切分文档。
+   - Upsert：将 chunk + metadata 写入向量库。
+   - Query：根据 query 检索 top-K 相似 chunk，rerank（可选），拼入 prompt。
 
-4. **验证 Docker 启动**：
-   - 用户启动 Docker Desktop 后，运行 `docker-compose up -d postgres redis` 与 `scripts/ci_check.ps1`。
+4. **接入 AgentRunner**：
+   - `generate_article` 在 `payload` 中接收 `material_ids` 或 `rag_query`。
+   - 自动从向量库检索上下文并拼入 `_build_article_prompt`。
+   - 在 `article.metadata` 记录 `used_context_ids`。
+
+5. **补充测试**：
+   - 文本分块单元测试。
+   - Embedding service mock 测试。
+   - RAG 检索与文章生成集成测试。
 
 ### 需要用户提供
 
 - 是否已启动 Docker Desktop？
 - 是否有真实 LLM API Key，以及服务商（当前 `.env.example` 默认 DeepSeek）？
+- 向量库偏好（Chroma / FAISS / Weaviate / Milvus）？
+- Embedding 来源（本地 ONNX 模型 / 远程 API）？
 
 ---
 
-## 10. 安全与密钥说明
+## 11. 安全与密钥说明
 
 - 项目未提交任何真实密钥。
 - `.env` 已在 `.gitignore` 中排除。

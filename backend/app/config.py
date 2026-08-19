@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "deepseek-chat"
     LLM_MOCK: bool = False
     LLM_TIMEOUT: int = 60
+    LLM_MAX_RETRIES: int = 3
+    LLM_RETRY_BACKOFF: float = 2.0
+    LLM_INPUT_PRICE_PER_1M: float = 0.0
+    LLM_OUTPUT_PRICE_PER_1M: float = 0.0
 
     # OSS
     OSS_ENDPOINT: str = ""
