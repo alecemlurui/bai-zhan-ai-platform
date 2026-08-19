@@ -149,7 +149,7 @@ pytest: 20 passed in ~20s
 ## 6. 代码提交与远程同步
 
 - Phase 0 提交：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
-- Phase 1 提交：待本次提交后更新
+- Phase 1 提交：`525a85f feat(llm): Phase 1 real LLM integration with retry, cost and structured errors`
 - 已推送至：`git@github.com:alecemlurui/bai-zhan-ai-platform.git` 的 `main` 分支
 - 未提交任何真实密钥；`.env` 已受 `.gitignore` 保护。
 
