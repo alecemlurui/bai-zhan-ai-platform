@@ -4,11 +4,10 @@ services/agent_runner.py
 Agent 流程编排与状态机。
 """
 
-import time
 from datetime import datetime, timezone
 from typing import Any
 
-from ..models import Article, Task, Topic, Title
+from ..models import Article, ArticleStatus, Task, TaskStatus, Title, Topic
 from .llm_client import LLMClient
 
 
@@ -27,7 +26,7 @@ class AgentRunner:
         self.task.logs.append(log_entry)
         await self.task.save(update_fields=["logs"])
 
-    async def _set_status(self, status: str) -> None:
+    async def _set_status(self, status: TaskStatus) -> None:
         self.task.status = status
         await self.task.save(update_fields=["status"])
 
@@ -38,7 +37,7 @@ class AgentRunner:
     async def run(self) -> None:
         """根据 task.type 分发执行。"""
         try:
-            await self._set_status("running")
+            await self._set_status(TaskStatus.RUNNING)
             if self.task.type == "generate_titles":
                 await self._generate_titles()
             elif self.task.type == "generate_article":
@@ -47,10 +46,10 @@ class AgentRunner:
                 await self._publish()
             else:
                 raise ValueError(f"Unknown task type: {self.task.type}")
-            await self._set_status("success")
+            await self._set_status(TaskStatus.SUCCESS)
         except Exception as exc:
             await self._log("Task failed", {"error": str(exc)})
-            await self._set_status("failed")
+            await self._set_status(TaskStatus.FAILED)
             raise
 
     async def _generate_titles(self) -> None:
@@ -99,7 +98,7 @@ class AgentRunner:
         article = await Article.create(
             title=title,
             content="",
-            status="generating",
+            status=ArticleStatus.GENERATING,
         )
 
         messages = [
@@ -109,13 +108,16 @@ class AgentRunner:
             },
             {
                 "role": "user",
-                "content": f"标题：{title.text}\n主题背景：{title.topic.title}\n请生成一篇 300 字左右、适合小红书风格的短文。",
+                "content": (
+                    f"标题：{title.text}\n主题背景：{title.topic.title}\n"
+                    "请生成一篇 300 字左右、适合小红书风格的短文。"
+                ),
             },
         ]
         result = await self.llm.chat(messages)
 
         article.content = result.content
-        article.status = "completed"
+        article.status = ArticleStatus.COMPLETED
         article.metadata = {
             "tokens": result.total_tokens,
             "latency_ms": result.latency_ms,
@@ -136,4 +138,6 @@ class AgentRunner:
         payload = self.task.payload
         # 真实实现需调用 publisher.py
         await self._log("发布任务已接收", payload)
-        await self._set_result({"published": True, "platform": payload.get("platform", "xiaohongshu")})
+        await self._set_result(
+            {"published": True, "platform": payload.get("platform", "xiaohongshu")}
+        )

@@ -7,7 +7,7 @@ api/articles.py
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_current_active_user
-from ..models import User
+from ..models import Task, User
 from ..schemas import ArticleCreateRequest, ArticleResponse, TaskResponse
 from ..services.topic import get_article, list_articles
 from ..tasks import run_agent_task

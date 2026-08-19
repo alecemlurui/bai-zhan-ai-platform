@@ -12,7 +12,7 @@ from uuid import uuid4
 from fastapi import UploadFile
 from PIL import Image
 
-from ..config import SETTINGS, BASE_DIR
+from ..config import BASE_DIR, SETTINGS
 
 UPLOAD_DIR = BASE_DIR / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)

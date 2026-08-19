@@ -16,7 +16,7 @@
 
 | 里程碑 | 状态 | 说明 |
 | --- | --- | --- |
-| A. 项目骨架与环境 | ✅ 完成 | Dockerfile、docker-compose、requirements、CI workflow、README |
+| A. 项目骨架与环境 | ✅ 完成 | Dockerfile、docker-compose、requirements、CI workflow、README、一键脚本 |
 | B. 数据库与 ORM | ✅ 完成 | Tortoise 模型、`aerich init`/`init-db`、初始迁移 |
 | C. 用户认证 | ✅ 完成 | 注册/登录/JWT/依赖注入，测试通过 |
 | D. 基础 API | ✅ 完成 | Health、Topics、Titles、Articles 路由 |
@@ -25,6 +25,7 @@
 | G. 向量检索/RAG | ⏳ 未开始 | 需接入 Embedding + Chroma/FAISS |
 | H. 前端示例 | ⏳ 未开始 | 仅提供 OpenAPI/Postman |
 | I. 部署/监控 | ⏳ 未开始 | Docker 已提供，K8s/监控待补 |
+| J. 代码质量与 CI | ✅ 基线完成 | black/isort/flake8/mypy/bandit 配置通过；ci_check 脚本可用 |
 
 ---
 

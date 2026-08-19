@@ -36,4 +36,4 @@ def run_agent_task(self, task_id: int) -> dict:
         return asyncio.run(_run())
     except Exception as exc:
         # 失败重试
-        raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=2**self.request.retries)

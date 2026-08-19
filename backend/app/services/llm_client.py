@@ -7,7 +7,6 @@ LLM 调用封装（OpenAI / Coze 兼容）。
 
 import time
 from dataclasses import dataclass
-from typing import Any
 
 import httpx
 
@@ -76,7 +75,9 @@ class LLMClient:
 
     def _mock_chat(self, messages: list[dict[str, str]]) -> LLMResult:
         last = messages[-1]["content"][:40]
-        content = f"【模拟 LLM 回答】收到问题：{last}... 这是一个基于本地 mock 的示例回复。"
+        content = (
+            f"【模拟 LLM 回答】收到问题：{last}... 这是一个基于本地 mock 的示例回复。"
+        )
         return LLMResult(
             content=content,
             prompt_tokens=10,

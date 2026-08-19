@@ -7,7 +7,7 @@
 - **Backend**: FastAPI + Pydantic v2
 - **ORM**: Tortoise ORM + Aerich
 - **任务队列**: Celery + Redis
-- **认证**: JWT + bcrypt
+- **认证**: JWT + PBKDF2-HMAC（标准库，无 bcrypt/passlib 依赖）
 - **LLM**: OpenAI / Coze 兼容接口（支持 mock）
 - **存储**: 本地文件 / 阿里云 OSS（预留）
 - **容器**: Docker + docker-compose
@@ -50,6 +50,9 @@
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── pyproject.toml
+├── scripts/
+│   ├── dev_up.sh / dev_up.ps1
+│   └── ci_check.sh / ci_check.ps1
 └── .github/workflows/ci.yml
 ```
 
@@ -62,7 +65,19 @@ cp .env.example .env
 # 编辑 .env 填入 JWT_SECRET 与 LLM_API_KEY
 ```
 
-### 2. 本地开发
+### 2. 一键启动开发环境（推荐）
+
+```bash
+# Linux / macOS / WSL
+./scripts/dev_up.sh
+
+# Windows PowerShell
+.\scripts\dev_up.ps1
+```
+
+> 前置条件：Docker Desktop 已启动，.env 已配置。
+
+### 3. 本地开发
 
 ```bash
 cd backend
@@ -79,24 +94,37 @@ aerich upgrade
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. 启动 Celery Worker
+### 4. 启动 Celery Worker
 
 ```bash
+cd backend
 celery -A app.worker worker --loglevel=info
 ```
 
-### 4. Docker 一键启动
+### 5. Docker 一键启动
 
 ```bash
 docker-compose up --build
 ```
 
-### 5. 运行测试
+### 6. 运行测试
 
 ```bash
 cd backend
 pytest -q
 ```
+
+### 7. 本地 CI 检查
+
+```bash
+# Linux / macOS / WSL
+./scripts/ci_check.sh
+
+# Windows PowerShell
+.\scripts\ci_check.ps1
+```
+
+检查项：black / isort / flake8 / mypy / bandit / pytest。
 
 ## 核心 API
 

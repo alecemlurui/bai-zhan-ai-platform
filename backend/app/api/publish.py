@@ -7,9 +7,8 @@ api/publish.py
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_current_active_user
-from ..models import Article, User
+from ..models import Article, Task, User
 from ..schemas import PublishRecordResponse, PublishRequest, TaskResponse
-from ..services.publisher import publish_article
 from ..tasks import run_agent_task
 
 router = APIRouter(prefix="/api/v1/publish", tags=["publish"])
@@ -21,7 +20,7 @@ async def publish(
     current_user: User = Depends(get_current_active_user),
 ):
     try:
-        article = await Article.get(id=payload.article_id)
+        await Article.get(id=payload.article_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Article not found")
 
@@ -43,4 +42,6 @@ async def list_records(
 ):
     from ..models import PublishRecord
 
-    return await PublishRecord.filter(article_id=article_id).order_by("-created_at").all()
+    return (
+        await PublishRecord.filter(article_id=article_id).order_by("-created_at").all()
+    )

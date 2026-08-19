@@ -6,10 +6,9 @@ FastAPI 依赖：JWT 认证、当前用户。
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import JWTError
 from tortoise.exceptions import DoesNotExist
 
-from .config import SETTINGS
 from .models import User
 from .services.auth import verify_token
 

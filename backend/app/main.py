@@ -42,8 +42,6 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix="")
 
     # 静态文件（上传的图片）
-    from pathlib import Path
-
     from .services.media import UPLOAD_DIR
 
     UPLOAD_DIR.mkdir(exist_ok=True)

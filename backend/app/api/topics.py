@@ -19,9 +19,7 @@ async def create(
     payload: TopicCreateRequest,
     current_user: User = Depends(get_current_active_user),
 ):
-    return await create_topic(
-        current_user, payload.title, payload.params
-    )
+    return await create_topic(current_user, payload.title, payload.params)
 
 
 @router.get("", response_model=list[TopicResponse])

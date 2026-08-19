@@ -30,12 +30,18 @@ async def get_topic(user, topic_id: int) -> Topic:
 
 
 async def list_titles(topic_id: int):
-    return await Title.filter(topic_id=topic_id).order_by("-created_at").all()
+    return (
+        await Title.filter(topic_id=topic_id)
+        .order_by("-created_at")  # type: ignore[attr-defined]
+        .all()
+    )
 
 
 async def select_title(title_id: int) -> Title:
     title = await Title.get(id=title_id)
-    await Title.filter(topic_id=title.topic_id).update(is_selected=False)
+    await Title.filter(topic_id=title.topic_id).update(  # type: ignore[attr-defined]
+        is_selected=False
+    )
     title.is_selected = True
     await title.save(update_fields=["is_selected"])
     return title

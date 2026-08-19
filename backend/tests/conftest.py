@@ -9,7 +9,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from tortoise import Tortoise
 
 # 每个 pytest 进程使用独立的 SQLite 文件，避免 Windows 文件锁冲突
