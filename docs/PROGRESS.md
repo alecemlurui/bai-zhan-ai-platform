@@ -22,12 +22,13 @@
 | C. 用户认证 | ✅ 完成 | 注册/登录/JWT/依赖注入，测试通过 |
 | D. 基础 API | ✅ 完成 | Health、Topics、Titles、Articles、Publish、RAG 路由 |
 | E. Agent / 任务流 | ✅ 完成 | `AgentRunner` + Celery worker + `Task` 状态机，可触发任务 |
-| F. 媒体与素材 | ✅ 骨架完成 | Media / Materials / Publish API 已存在，待接真实 OSS / 小红书 SDK |
+| F. 媒体与素材 | ✅ Phase 3 完成 | 图片生成（Mock/Remote/SD）+ OSS/本地上传 + Media 表记录 |
 | G. 向量检索/RAG | ✅ Phase 2 完成 | ONNX Embedding + Chroma 向量库 + 文本分块 + Agent 自动检索 |
 | H. 前端示例 | ⏳ 未开始 | 仅提供 OpenAPI/Postman |
 | I. 部署/监控 | ⏳ 未开始 | Docker 已提供，K8s/监控待补 |
 | J. 代码质量与 CI | ✅ 基线完成 | black/isort/flake8/mypy/bandit 配置通过；ci_check 脚本可用 |
 | K. 真实 LLM 接入 | ✅ Phase 1 完成 | LLMClient 增强：重试、超时、计费、异常分类；Agent prompt 结构化 |
+| L. 图片/OSS | ✅ Phase 3 完成 | /media/generate、/articles/generate-cover、LocalUploader/OssUploader |
 
 ---
 
@@ -86,7 +87,42 @@ pytest: 29 passed in ~22s
 
 ---
 
-## 6. 已知阻塞与环境问题
+## 6. Phase 3：图片生成与 OSS/本地存储（已完成）
+
+### 6.1 新增服务
+
+- `services/image_generator.py`：`BaseImageGenerator` 抽象 + `MockImageGenerator`（PIL）+ `RemoteImageGenerator` + `LocalSdImageGenerator`
+- `services/oss_uploader.py`：`BaseUploader` 抽象 + `LocalUploader` 回退 + `OssUploader`（阿里云 OSS）
+- `services/media.py`：`generate_image()` 整合生成、上传、元数据提取
+
+### 6.2 API 扩展
+
+- `POST /api/v1/media/generate`：根据 prompt 生成图片并入库
+- `POST /api/v1/articles/generate-cover`：为文章生成封面图
+
+### 6.3 配置扩展
+
+- `IMAGE_GENERATOR_MODE` / `IMAGE_API_URL` / `IMAGE_API_KEY` / `IMAGE_MODEL` / `IMAGE_TIMEOUT`
+- `UPLOADER_MODE`（local | oss）
+
+### 6.4 验证结果
+
+```text
+black: 37 files would be left unchanged
+isort: Skipped 2 files
+flake8: 无错误
+mypy: Success: no issues found in 36 source files
+bandit: No issues identified. Medium: 0, High: 0
+pytest: 36 passed in ~23s
+```
+
+### 6.5 提交
+
+- `ca1488e feat(media): Phase 3 image generation and OSS/local upload`
+
+---
+
+## 7. 已知阻塞与环境问题
 
 | 问题 | 状态 | 说明 |
 | --- | --- | --- |
@@ -96,17 +132,18 @@ pytest: 29 passed in ~22s
 
 ---
 
-## 7. 代码提交与远程同步
+## 8. 代码提交与远程同步
 
 - Phase 0：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
 - Phase 1：`525a85f feat(llm): Phase 1 real LLM integration with retry, cost and structured errors`
 - Phase 2：`1013c55 feat(rag): Phase 2 vector retrieval with ONNX embedding + Chroma store`
+- Phase 3：`ca1488e feat(media): Phase 3 image generation and OSS/local upload`
 - 已推送至：`git@github.com:alecemlurui/bai-zhan-ai-platform.git` 的 `main` 分支
 - 未提交任何真实密钥；`.env` 已受 `.gitignore` 保护。
 
 ---
 
-## 8. 关键文件结构
+## 9. 关键文件结构
 
 ```text
 bai-zhan-ai-platform/
@@ -145,8 +182,10 @@ bai-zhan-ai-platform/
 │   │   │   ├── agent_runner.py
 │   │   │   ├── auth_service.py
 │   │   │   ├── embedding.py
+│   │   │   ├── image_generator.py
 │   │   │   ├── llm_client.py
 │   │   │   ├── media.py
+│   │   │   ├── oss_uploader.py
 │   │   │   ├── publisher.py
 │   │   │   ├── rag.py
 │   │   │   ├── topic.py
@@ -159,6 +198,7 @@ bai-zhan-ai-platform/
 │       ├── test_agent.py
 │       ├── test_auth.py
 │       ├── test_llm_integration.py
+│       ├── test_media.py
 │       ├── test_rag.py
 │       └── test_topics.py
 └── docs/
@@ -167,7 +207,7 @@ bai-zhan-ai-platform/
 
 ---
 
-## 9. 主要技术决策
+## 10. 主要技术决策
 
 - **密码哈希**：弃用 `passlib+bcrypt`，改用 `hashlib.pbkdf2_hmac`。
 - **JWT**：`sub` 声明使用字符串，避免 `python-jose` 的 `JWTClaimsError`。
@@ -176,10 +216,11 @@ bai-zhan-ai-platform/
 - **Pydantic / Tortoise**：迁移到 `ConfigDict`、`SettingsConfigDict`、`primary_key=True`。
 - **LLM / Embedding / Vector Store Mock**：默认 Mock 模式，保证无 Key 环境可测试。
 - **RAG**：本地 ONNX BGE + Chroma；抽象接口便于切换远程 Embedding / Weaviate。
+- **图片生成 / 上传**：默认 Mock 生成器（PIL）与本地上传器，预留 Remote/SD/OSS 接入。
 
 ---
 
-## 10. 待完善项（按优先级）
+## 11. 待完善项（按优先级）
 
 | 序号 | 事项 | 优先级 | 所属阶段 |
 | --- | --- | --- | --- |
@@ -194,40 +235,39 @@ bai-zhan-ai-platform/
 
 ---
 
-## 11. 下一步建议（Phase 3：图片生成与 OSS 上传）
+## 12. 下一步建议（Phase 4：小红书发布流程）
 
-建议按以下顺序推进 Phase 3：
+建议按以下顺序推进 Phase 4：
 
-1. **图片生成服务（`services/image_generator.py`）**：
-   - 抽象 `ImageGenerator` 接口。
-   - 实现 `MockImageGenerator`（测试用）和 `RemoteImageGenerator`（支持自定义 API）。
-   - 预留 Stable Diffusion / DALL-E / 即梦接入点。
+1. **账号管理模型**：
+   - 新增 `PlatformAccount` 表：platform、account_name、credentials（JSON 加密或安全存储）、is_active。
 
-2. **OSS 上传服务（`services/oss_uploader.py`）**：
-   - 封装阿里云 OSS：`put_object_from_file`、签名 URL、bucket policy 检查。
-   - 实现本地文件系统回退（`LocalUploader`），无 OSS Key 时保存到 `uploads/`。
+2. **发布服务增强（`services/publisher.py`）**：
+   - 保留 `XiaoHongShuPublisher` mock 实现。
+   - 新增 `SandboxPublisher` 与真实 HTTP publisher 适配层。
+   - 支持选择账号、重试、失败记录。
 
-3. **媒体服务增强（`services/media.py`）**：
-   - 生成图片 -> 临时文件 -> 上传 -> 写入 `Media` 表 -> 返回 URL。
-   - 支持生成封面/正文图任务。
+3. **API 路由**：
+   - `POST /api/v1/publish`：指定 article_id + account_id，创建发布任务。
+   - `GET /api/v1/publish_records`：查询发布历史。
+   - `POST /api/v1/accounts`：绑定第三方账号。
 
-4. **API 路由**：
-   - `POST /api/v1/articles/{article_id}/generate-cover` -> task_id
-   - `GET /api/v1/media/{media_id}`
+4. **AgentRunner 集成**：
+   - 将 publish 任务类型接入 Celery worker，调用 publisher 并回填 `PublishRecord`。
 
 5. **测试**：
-   - Mock 图片生成与上传。
-   - 验证 Media 表记录与 URL 可访问性。
+   - Mock 发布成功/失败场景。
+   - 验证发布历史记录与状态流转。
 
 ### 需要用户提供
 
 - 是否已启动 Docker Desktop？
-- 图片生成服务商偏好（本地 SD / 远程 API）？
-- 阿里云 OSS 的 `ACCESS_KEY_ID`、`ACCESS_KEY_SECRET`、`BUCKET`、`ENDPOINT`（可选，未配置则使用本地存储回退）。
+- 小红书/第三方平台开发者账号与 API 文档（可选，未配置则使用 mock）。
+- 是否需要账号凭证加密存储？（当前阶段可先用 JSON 明文，生产前升级。）
 
 ---
 
-## 12. 安全与密钥说明
+## 13. 安全与密钥说明
 
 - 项目未提交任何真实密钥。
 - `.env` 已在 `.gitignore` 中排除。
