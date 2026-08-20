@@ -68,6 +68,9 @@ class TitleResponse(BaseModel):
 
 class ArticleCreateRequest(BaseModel):
     title_id: int
+    use_rag: bool = False
+    rag_query: str | None = None
+    rag_top_k: int | None = None
 
 
 class ArticleResponse(BaseModel):

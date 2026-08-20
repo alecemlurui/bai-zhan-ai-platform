@@ -19,6 +19,8 @@ TEST_DB_PATH = Path(_db_path)
 os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 os.environ["JWT_SECRET"] = "test-secret"
 os.environ["LLM_MOCK"] = "true"
+os.environ["EMBEDDING_MOCK"] = "true"
+os.environ["VECTOR_DB_TYPE"] = "mock"
 
 from app.config import TORTOISE_ORM  # noqa: E402
 from app.main import app  # noqa: E402

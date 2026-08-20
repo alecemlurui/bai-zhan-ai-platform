@@ -54,6 +54,19 @@ class Settings(BaseSettings):
     XIAOHONGSHU_APP_SECRET: str = ""
     XIAOHONGSHU_MOCK: bool = True
 
+    # RAG / Vector store / Embedding
+    VECTOR_DB_TYPE: str = "chroma"  # chroma | faiss | weaviate | milvus
+    VECTOR_DB_PATH: str = "./chroma_db"
+    VECTOR_DB_URL: str = ""
+    VECTOR_DB_API_KEY: str = ""
+    EMBEDDING_MODEL_PATH: str = ""
+    EMBEDDING_TOKENIZER_PATH: str = ""
+    EMBEDDING_MOCK: bool = True
+    EMBEDDING_VECTOR_SIZE: int = 512
+    RAG_CHUNK_SIZE: int = 300
+    RAG_CHUNK_OVERLAP: int = 50
+    RAG_TOP_K: int = 5
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR.parent / ".env",
         env_file_encoding="utf-8",

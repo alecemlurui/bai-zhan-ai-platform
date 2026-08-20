@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..dependencies import get_current_active_user
 from ..models import Material, User
 from ..schemas import MaterialCreateRequest, MaterialResponse
+from ..services.rag import delete_material_chunks, ingest_material
 
 router = APIRouter(prefix="/api/v1/materials", tags=["materials"])
 
@@ -25,6 +26,12 @@ async def create(
         url=payload.url,
         tags=payload.tags or [],
     )
+    if material.type == "text" and material.content:
+        await ingest_material(
+            material_id=material.id,
+            text=material.content,
+            metadata={"material_id": material.id, "owner_id": current_user.id},
+        )
     return material
 
 
@@ -61,5 +68,7 @@ async def delete(
         material = await Material.get(owner=current_user, id=material_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Material not found")
+    if material.type == "text":
+        await delete_material_chunks(material_id=material.id)
     await material.delete()
     return {"message": "Deleted"}

@@ -9,6 +9,7 @@ from typing import Any
 
 from ..models import Article, ArticleStatus, Task, TaskStatus, Title, Topic
 from .llm_client import LLMClient, LLMError
+from .rag import retrieve_context
 
 
 class AgentRunner:
@@ -110,9 +111,24 @@ class AgentRunner:
         payload = self.task.payload
         title_id = payload["title_id"]
         title = await Title.get(id=title_id).prefetch_related("topic")
-        rag_context = payload.get("rag_context", "")
         word_count = payload.get("word_count", 300)
         style = payload.get("style", "xiaohongshu")
+
+        rag_context = ""
+        used_context_ids: list[str] = []
+        if payload.get("use_rag"):
+            query = payload.get("rag_query") or f"{title.text} {title.topic.title}"
+            top_k = payload.get("rag_top_k", 5)
+            await self._log("开始检索 RAG 上下文", {"query": query, "top_k": top_k})
+            contexts = await self._retrieve_contexts(query, top_k)
+            rag_context = "\n\n".join(
+                f"[{i + 1}] {ctx['content']}" for i, ctx in enumerate(contexts)
+            )
+            used_context_ids = [ctx["id"] for ctx in contexts]
+            await self._log(
+                "RAG 上下文检索完成",
+                {"context_ids": used_context_ids, "chars": len(rag_context)},
+            )
 
         await self._log(
             "开始生成文章",
@@ -121,6 +137,7 @@ class AgentRunner:
                 "title": title.text,
                 "style": style,
                 "word_count": word_count,
+                "use_rag": payload.get("use_rag", False),
             },
         )
 
@@ -158,6 +175,7 @@ class AgentRunner:
             "cost_usd": round(result.cost_usd, 6),
             "latency_ms": round(result.latency_ms, 2),
             "model": result.model,
+            "used_context_ids": used_context_ids,
         }
         await article.save()
 
@@ -169,6 +187,7 @@ class AgentRunner:
                 "cost_usd": round(result.cost_usd, 6),
                 "latency_ms": round(result.latency_ms, 2),
                 "model": result.model,
+                "used_context_ids": used_context_ids,
             }
         )
         await self._log("文章生成完成", {"article_id": article.id})
@@ -180,6 +199,10 @@ class AgentRunner:
         await self._set_result(
             {"published": True, "platform": payload.get("platform", "xiaohongshu")}
         )
+
+    @staticmethod
+    async def _retrieve_contexts(query: str, top_k: int) -> list[dict[str, Any]]:
+        return await retrieve_context(query, top_k=top_k)
 
     @staticmethod
     def _build_title_prompt(topic_title: str, count: int) -> str:

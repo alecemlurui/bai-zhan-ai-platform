@@ -4,6 +4,8 @@ api/articles.py
 文章生成 API。
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_current_active_user
@@ -20,9 +22,14 @@ async def generate(
     payload: ArticleCreateRequest,
     current_user: User = Depends(get_current_active_user),
 ):
+    task_payload: dict[str, Any] = {"title_id": payload.title_id}
+    if payload.use_rag:
+        task_payload["use_rag"] = True
+        task_payload["rag_query"] = payload.rag_query or ""
+        task_payload["rag_top_k"] = payload.rag_top_k or 5
     task = await Task.create(
         type="generate_article",
-        payload={"title_id": payload.title_id},
+        payload=task_payload,
     )
     run_agent_task.delay(task.id)
     return task
