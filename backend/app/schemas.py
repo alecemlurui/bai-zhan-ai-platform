@@ -73,6 +73,13 @@ class ArticleCreateRequest(BaseModel):
     rag_top_k: int | None = None
 
 
+class ArticleCoverRequest(BaseModel):
+    article_id: int
+    prompt: str
+    width: int = 512
+    height: int = 512
+
+
 class ArticleResponse(BaseModel):
     id: int
     title_id: int

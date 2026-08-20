@@ -5,12 +5,19 @@ api/articles.py
 """
 
 from typing import Any
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_current_active_user
-from ..models import Task, User
-from ..schemas import ArticleCreateRequest, ArticleResponse, TaskResponse
+from ..models import Media, Task, User
+from ..schemas import (
+    ArticleCoverRequest,
+    ArticleCreateRequest,
+    ArticleResponse,
+    TaskResponse,
+)
+from ..services.media import generate_image
 from ..services.topic import get_article, list_articles
 from ..tasks import run_agent_task
 
@@ -52,3 +59,38 @@ async def detail(
         return await get_article(article_id)
     except Exception:
         raise HTTPException(status_code=404, detail="Article not found")
+
+
+@router.post("/generate-cover", response_model=dict[str, Any])
+async def generate_cover(
+    payload: ArticleCoverRequest,
+    current_user: User = Depends(get_current_active_user),
+):
+    article = await get_article(payload.article_id)
+    prompt = payload.prompt or f"封面图：{article.title.text}"
+
+    try:
+        result = await generate_image(
+            prompt,
+            width=payload.width,
+            height=payload.height,
+            object_key=f"covers/article_{payload.article_id}_{uuid4().hex}.jpg",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Cover generation failed: {exc}")
+
+    media = await Media.create(
+        owner=current_user,
+        url=result["url"],
+        type="image",
+        width=result.get("width"),
+        height=result.get("height"),
+        size_bytes=result.get("size_bytes"),
+    )
+    return {
+        "article_id": payload.article_id,
+        "media_id": media.id,
+        "url": media.url,
+        "width": media.width,
+        "height": media.height,
+    }

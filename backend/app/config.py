@@ -43,11 +43,19 @@ class Settings(BaseSettings):
     LLM_INPUT_PRICE_PER_1M: float = 0.0
     LLM_OUTPUT_PRICE_PER_1M: float = 0.0
 
-    # OSS
+    # OSS / Upload
     OSS_ENDPOINT: str = ""
     OSS_ACCESS_KEY_ID: str = ""
     OSS_ACCESS_KEY_SECRET: str = ""
     OSS_BUCKET: str = ""
+    UPLOADER_MODE: str = "local"  # local | oss
+
+    # Image generation
+    IMAGE_GENERATOR_MODE: str = "mock"  # mock | remote | sd
+    IMAGE_API_URL: str = ""
+    IMAGE_API_KEY: str = ""
+    IMAGE_MODEL: str = ""
+    IMAGE_TIMEOUT: int = 120
 
     # XiaoHongShu
     XIAOHONGSHU_APP_ID: str = ""
