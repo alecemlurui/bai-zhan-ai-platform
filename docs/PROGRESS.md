@@ -29,6 +29,7 @@
 | J. 代码质量与 CI | ✅ 基线完成 | black/isort/flake8/mypy/bandit 配置通过；ci_check 脚本可用 |
 | K. 真实 LLM 接入 | ✅ Phase 1 完成 | LLMClient 增强：重试、超时、计费、异常分类；Agent prompt 结构化 |
 | L. 图片/OSS | ✅ Phase 3 完成 | /media/generate、/articles/generate-cover、LocalUploader/OssUploader |
+| M. 小红书/第三方发布 | ✅ Phase 4 完成 | PlatformAccount + Mock/Sandbox Publisher + AgentRunner 发布任务 |
 
 ---
 
@@ -122,7 +123,44 @@ pytest: 36 passed in ~23s
 
 ---
 
-## 7. 已知阻塞与环境问题
+## 7. Phase 4：小红书 / 第三方发布流程（已完成）
+
+### 7.1 模型与迁移
+
+- 新增 `PlatformAccount` 表：owner、platform、account_name、credentials、is_active。
+- `PublishRecord` 增加 `account` 外键，记录发布账号。
+- 生成 aerich 迁移：`1_20260820121909_add_platform_account.py`。
+
+### 7.2 发布服务
+
+- `services/publisher.py`：抽象 `BasePublisher`。
+- 实现 `MockPublisher`、`SandboxPublisher`、`XiaoHongShuPublisher`。
+- `get_publisher(platform)` 工厂函数；`publish_article()` 统一入口。
+
+### 7.3 API 与 AgentRunner
+
+- 新增 `api/accounts.py`：平台账号 CRUD。
+- 更新 `api/publish.py`：支持 `account_id`，校验账号归属与平台匹配。
+- `AgentRunner._publish` 调用 `publish_article` 并回填 `PublishRecord`。
+
+### 7.4 验证结果
+
+```text
+black: 40 files would be left unchanged
+isort: Skipped 2 files
+flake8: 无错误
+mypy: Success: no issues found in 38 source files
+bandit: No issues identified. Medium: 0, High: 0
+pytest: 44 passed in ~23s
+```
+
+### 7.5 提交
+
+- `12221db feat(publish): Phase 4 XiaoHongShu/third-party publish flow with accounts`
+
+---
+
+## 8. 已知阻塞与环境问题
 
 | 问题 | 状态 | 说明 |
 | --- | --- | --- |
@@ -132,18 +170,19 @@ pytest: 36 passed in ~23s
 
 ---
 
-## 8. 代码提交与远程同步
+## 9. 代码提交与远程同步
 
 - Phase 0：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
 - Phase 1：`525a85f feat(llm): Phase 1 real LLM integration with retry, cost and structured errors`
 - Phase 2：`1013c55 feat(rag): Phase 2 vector retrieval with ONNX embedding + Chroma store`
 - Phase 3：`ca1488e feat(media): Phase 3 image generation and OSS/local upload`
+- Phase 4：`12221db feat(publish): Phase 4 XiaoHongShu/third-party publish flow with accounts`
 - 已推送至：`git@github.com:alecemlurui/bai-zhan-ai-platform.git` 的 `main` 分支
 - 未提交任何真实密钥；`.env` 已受 `.gitignore` 保护。
 
 ---
 
-## 9. 关键文件结构
+## 10. 关键文件结构
 
 ```text
 bai-zhan-ai-platform/
@@ -207,7 +246,7 @@ bai-zhan-ai-platform/
 
 ---
 
-## 10. 主要技术决策
+## 11. 主要技术决策
 
 - **密码哈希**：弃用 `passlib+bcrypt`，改用 `hashlib.pbkdf2_hmac`。
 - **JWT**：`sub` 声明使用字符串，避免 `python-jose` 的 `JWTClaimsError`。
@@ -217,57 +256,60 @@ bai-zhan-ai-platform/
 - **LLM / Embedding / Vector Store Mock**：默认 Mock 模式，保证无 Key 环境可测试。
 - **RAG**：本地 ONNX BGE + Chroma；抽象接口便于切换远程 Embedding / Weaviate。
 - **图片生成 / 上传**：默认 Mock 生成器（PIL）与本地上传器，预留 Remote/SD/OSS 接入。
+- **第三方发布**：Mock/Sandbox Publisher + 账号管理，真实 API 通过适配层替换。
 
 ---
 
-## 11. 待完善项（按优先级）
+## 12. 待完善项（按优先级）
 
 | 序号 | 事项 | 优先级 | 所属阶段 |
 | --- | --- | --- | --- |
-| 1 | 图片生成（调用 SD / DALL-E / 即梦等） | 高 | Phase 3 |
-| 2 | 阿里云 OSS 上传与本地回退 | 高 | Phase 3 |
-| 3 | 小红书账号绑定与发布 API | 高 | Phase 4 |
-| 4 | 真实 LLM / Embedding / OSS Key 联调 | 高 | Phase 5 |
-| 5 | Celery + Redis 实际运行验证 | 中 | Phase 5 |
-| 6 | GitHub Actions CI workflow 补全 | 中 | Phase 5 |
-| 7 | 前端最小示例或 Postman Collection | 低 | Phase 6 |
-| 8 | K8s / Prometheus / Sentry 生产部署 | 低 | Phase 7 |
+| 1 | 图片生成（调用 SD / DALL-E / 即梦等） | 高 | Phase 3 ✅ |
+| 2 | 阿里云 OSS 上传与本地回退 | 高 | Phase 3 ✅ |
+| 3 | 小红书账号绑定与发布 API | 高 | Phase 4 ✅ |
+| 4 | GitHub Actions CI workflow 补全 | 高 | Phase 5 |
+| 5 | Docker / docker-compose 端到端验证 | 高 | Phase 5 |
+| 6 | 真实 LLM / Embedding / OSS / 小红书 Key 联调 | 中 | Phase 5/6 |
+| 7 | Celery + Redis 实际运行验证 | 中 | Phase 5 |
+| 8 | Sentry / Prometheus 监控接入 | 中 | Phase 6 |
+| 9 | K8s / 生产部署清单 | 低 | Phase 6 |
+| 10 | 前端最小示例或 Postman Collection | 低 | Phase 7 |
 
 ---
 
-## 12. 下一步建议（Phase 4：小红书发布流程）
+## 13. 下一步建议（Phase 5：CI/CD、监控与生产部署清单）
 
-建议按以下顺序推进 Phase 4：
+建议按以下顺序推进 Phase 5：
 
-1. **账号管理模型**：
-   - 新增 `PlatformAccount` 表：platform、account_name、credentials（JSON 加密或安全存储）、is_active。
+1. **GitHub Actions CI workflow**：
+   - 补全 `.github/workflows/ci.yml`：安装依赖、启动 Postgres/Redis 服务容器、跑 pytest、lint、build Docker 镜像。
+   - 添加 coverage 报告与 pytest 结果上传。
 
-2. **发布服务增强（`services/publisher.py`）**：
-   - 保留 `XiaoHongShuPublisher` mock 实现。
-   - 新增 `SandboxPublisher` 与真实 HTTP publisher 适配层。
-   - 支持选择账号、重试、失败记录。
+2. **Docker 与 docker-compose 验证**：
+   - 用户启动 Docker Desktop 后，运行 `docker-compose up --build` 验证 web + worker + postgres + redis。
+   - 修复容器内 `.env` 挂载与路径问题。
 
-3. **API 路由**：
-   - `POST /api/v1/publish`：指定 article_id + account_id，创建发布任务。
-   - `GET /api/v1/publish_records`：查询发布历史。
-   - `POST /api/v1/accounts`：绑定第三方账号。
+3. **监控与可观测性**：
+   - 接入 Sentry 错误追踪（`sentry-sdk[fastapi]`）。
+   - 可选接入 Prometheus / Grafana 指标。
 
-4. **AgentRunner 集成**：
-   - 将 publish 任务类型接入 Celery worker，调用 publisher 并回填 `PublishRecord`。
+4. **生产部署清单**：
+   - 提供 k8s 基础 manifest（deployment、service、ingress）。
+   - 提供 staging / prod 环境变量模板。
+   - 提供数据库备份与回滚脚本。
 
-5. **测试**：
-   - Mock 发布成功/失败场景。
-   - 验证发布历史记录与状态流转。
+5. **端到端验收**：
+   - 使用 Postman / 脚本跑通：注册 -> 登录 -> 创建主题 -> 生成标题 -> 生成文章（RAG）-> 生成封面 -> 发布 -> 查询发布历史。
 
 ### 需要用户提供
 
 - 是否已启动 Docker Desktop？
-- 小红书/第三方平台开发者账号与 API 文档（可选，未配置则使用 mock）。
-- 是否需要账号凭证加密存储？（当前阶段可先用 JSON 明文，生产前升级。）
+- 真实 LLM / Embedding / OSS / 小红书 API Key（可选，未配置则继续使用 mock）。
+- 生产环境偏好（云服务厂商、K8s 是否已有集群）。
 
 ---
 
-## 13. 安全与密钥说明
+## 14. 安全与密钥说明
 
 - 项目未提交任何真实密钥。
 - `.env` 已在 `.gitignore` 中排除。
