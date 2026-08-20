@@ -21,6 +21,11 @@ async function api(path, options = {}) {
   const resp = await fetch(url, { ...options, headers });
   const body = await resp.json().catch(() => ({}));
   if (!resp.ok) {
+    if (resp.status === 401) {
+      logout();
+      showAuth();
+      throw new Error('登录已过期，请重新登录');
+    }
     const detail = body.detail || body.message || JSON.stringify(body);
     throw new Error(`${resp.status}: ${detail}`);
   }

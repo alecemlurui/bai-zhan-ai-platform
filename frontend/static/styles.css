@@ -58,8 +58,9 @@ button[type="submit"]:hover, .tab.active:hover, .nav-item.active:hover {
   background: var(--primary-hover);
 }
 
-.form { display: none; flex-direction: column; gap: 12px; }
-.form.active { display: flex; }
+.form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form { display: none; }
+.auth-form.active { display: flex; }
 label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--muted); }
 input, textarea {
   padding: 10px 12px;
