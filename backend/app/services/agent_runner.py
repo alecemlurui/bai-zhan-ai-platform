@@ -7,8 +7,17 @@ Agent 流程编排与状态机。
 from datetime import datetime, timezone
 from typing import Any
 
-from ..models import Article, ArticleStatus, Task, TaskStatus, Title, Topic
+from ..models import (
+    Article,
+    ArticleStatus,
+    PlatformAccount,
+    Task,
+    TaskStatus,
+    Title,
+    Topic,
+)
 from .llm_client import LLMClient, LLMError
+from .publisher import publish_article
 from .rag import retrieve_context
 
 
@@ -194,10 +203,35 @@ class AgentRunner:
 
     async def _publish(self) -> None:
         payload = self.task.payload
-        # 真实实现需调用 publisher.py
-        await self._log("发布任务已接收", payload)
+        article_id = payload["article_id"]
+        platform = payload.get("platform", "xiaohongshu")
+        account_id = payload.get("account_id")
+
+        article = await Article.get(id=article_id).prefetch_related("title")
+        account = None
+        if account_id is not None:
+            account = await PlatformAccount.get(id=account_id)
+
+        await self._log(
+            "开始发布文章",
+            {"article_id": article_id, "platform": platform, "account_id": account_id},
+        )
+
+        record = await publish_article(article, platform, account)
+
         await self._set_result(
-            {"published": True, "platform": payload.get("platform", "xiaohongshu")}
+            {
+                "publish_record_id": record.id,
+                "article_id": article_id,
+                "platform": platform,
+                "status": record.status.value,
+                "ext_id": record.ext_id,
+                "error": record.error_message,
+            }
+        )
+        await self._log(
+            "发布任务完成",
+            {"publish_record_id": record.id, "status": record.status.value},
         )
 
     @staticmethod

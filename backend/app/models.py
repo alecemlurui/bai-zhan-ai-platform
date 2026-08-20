@@ -145,9 +145,30 @@ class PublishStatus(str, Enum):
     FAILED = "failed"
 
 
+class PlatformAccount(models.Model):
+    id = fields.IntField(primary_key=True)
+    owner = fields.ForeignKeyField("models.User", related_name="platform_accounts")
+    platform = fields.CharField(max_length=64)
+    account_name = fields.CharField(max_length=256)
+    credentials = fields.JSONField(default=dict)
+    is_active = fields.BooleanField(default=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    publish_records: fields.ReverseRelation["PublishRecord"]
+
+    class Meta:
+        table = "platform_accounts"
+
+
 class PublishRecord(models.Model):
     id = fields.IntField(primary_key=True)
     article = fields.ForeignKeyField("models.Article", related_name="publish_records")
+    account = fields.ForeignKeyField(
+        "models.PlatformAccount",
+        related_name="publish_records",
+        null=True,
+    )
     platform = fields.CharField(max_length=64)
     status = fields.CharEnumField(PublishStatus, default=PublishStatus.PENDING)
     ext_id = fields.CharField(max_length=256, null=True)

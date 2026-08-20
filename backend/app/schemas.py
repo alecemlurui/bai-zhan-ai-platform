@@ -109,16 +109,36 @@ class TaskResponse(BaseModel):
 class PublishRequest(BaseModel):
     article_id: int
     platform: str = "xiaohongshu"
+    account_id: Optional[int] = None
 
 
 class PublishRecordResponse(BaseModel):
     id: int
     article_id: int
+    account_id: Optional[int]
     platform: str
     status: str
     ext_id: Optional[str]
     error_message: Optional[str]
     result: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PlatformAccountCreateRequest(BaseModel):
+    platform: str = Field(..., pattern="^(xiaohongshu|weibo|douyin)$")
+    account_name: str = Field(..., min_length=1, max_length=256)
+    credentials: dict[str, Any] = Field(default_factory=dict)
+
+
+class PlatformAccountResponse(BaseModel):
+    id: int
+    owner_id: int
+    platform: str
+    account_name: str
+    is_active: bool
     created_at: datetime
     updated_at: datetime
 

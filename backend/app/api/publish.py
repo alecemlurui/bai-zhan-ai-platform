@@ -7,7 +7,7 @@ api/publish.py
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_current_active_user
-from ..models import Article, Task, User
+from ..models import Article, PlatformAccount, Task, User
 from ..schemas import PublishRecordResponse, PublishRequest, TaskResponse
 from ..tasks import run_agent_task
 
@@ -24,11 +24,30 @@ async def publish(
     except Exception:
         raise HTTPException(status_code=404, detail="Article not found")
 
+    if payload.account_id is not None:
+        try:
+            account = await PlatformAccount.get(
+                owner=current_user,
+                id=payload.account_id,
+                is_active=True,
+            )
+        except Exception:
+            raise HTTPException(status_code=404, detail="Platform account not found")
+        if account.platform != payload.platform:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Account platform mismatch: "
+                    f"{account.platform} != {payload.platform}"
+                ),
+            )
+
     task = await Task.create(
         type="publish",
         payload={
             "article_id": payload.article_id,
             "platform": payload.platform,
+            "account_id": payload.account_id,
         },
     )
     run_agent_task.delay(task.id)
