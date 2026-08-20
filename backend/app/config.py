@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
+    SENTRY_DSN: str = ""
 
     # Database
     DATABASE_URL: str = "sqlite://db.sqlite3"

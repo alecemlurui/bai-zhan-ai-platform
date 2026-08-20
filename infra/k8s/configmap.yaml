@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bai-zhan-config
+  namespace: bai-zhan
+data:
+  APP_NAME: "百战智能运营平台"
+  ENVIRONMENT: "staging"
+  LOG_LEVEL: "INFO"
+  DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/bai_zhan"
+  REDIS_URL: "redis://redis:6379/0"
+  LLM_BASE_URL: "https://api.deepseek.com/v1"
+  LLM_MODEL: "deepseek-chat"
+  VECTOR_DB_TYPE: "chroma"
+  VECTOR_DB_PATH: "/app/data/chroma_db"
+  EMBEDDING_MOCK: "false"
+  IMAGE_GENERATOR_MODE: "mock"
+  UPLOADER_MODE: "oss"
+  XIAOHONGSHU_MOCK: "true"

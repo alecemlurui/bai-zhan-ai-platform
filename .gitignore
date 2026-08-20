@@ -58,6 +58,9 @@ Thumbs.db
 
 # pytest
 .pytest_cache/
+.coverage
+coverage.xml
+coverage.html
 
 # Aerich
 migrations/*

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bai-zhan-worker
+  namespace: bai-zhan
+  labels:
+    app: bai-zhan-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bai-zhan-worker
+  template:
+    metadata:
+      labels:
+        app: bai-zhan-worker
+    spec:
+      containers:
+        - name: worker
+          image: bai-zhan-ai-platform:latest
+          command: ["celery", "-A", "app.worker", "worker", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: bai-zhan-config
+            - secretRef:
+                name: bai-zhan-secrets
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
