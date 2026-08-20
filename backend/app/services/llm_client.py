@@ -131,11 +131,16 @@ class LLMClient:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
+        # 兼容 base_url 已带 /v1 或未带 /v1 的两种配置习惯
+        normalized_base = self.base_url.rstrip("/")
+        if normalized_base.endswith("/v1"):
+            normalized_base = normalized_base[:-3]
+        chat_url = f"{normalized_base}/v1/chat/completions"
         start = time.time()
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
                 resp = await client.post(
-                    f"{self.base_url}/v1/chat/completions",
+                    chat_url,
                     headers=headers,
                     json=payload,
                 )

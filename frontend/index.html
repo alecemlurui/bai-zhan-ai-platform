@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>百战智能运营平台 - 前端示例</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>百战智能运营平台</h1>
+      <div class="user-bar" id="user-bar" style="display:none;">
+        <span id="username"></span>
+        <button id="logout-btn">退出</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <!-- 登录/注册 -->
+      <section id="auth-section" class="card">
+        <h2>登录 / 注册</h2>
+        <div class="tabs">
+          <button class="tab active" data-tab="login">登录</button>
+          <button class="tab" data-tab="register">注册</button>
+        </div>
+        <form id="login-form" class="form active">
+          <label>用户名 <input type="text" id="login-username" required /></label>
+          <label>密码 <input type="password" id="login-password" required /></label>
+          <button type="submit">登录</button>
+        </form>
+        <form id="register-form" class="form">
+          <label>用户名 <input type="text" id="register-username" required /></label>
+          <label>密码 <input type="password" id="register-password" required /></label>
+          <label>邮箱（可选）<input type="email" id="register-email" /></label>
+          <button type="submit">注册</button>
+        </form>
+      </section>
+
+      <!-- 工作台 -->
+      <div id="workspace" style="display:none;">
+        <nav class="nav">
+          <button class="nav-item active" data-page="topics">主题创作</button>
+          <button class="nav-item" data-page="articles">文章管理</button>
+          <button class="nav-item" data-page="rag">RAG 素材库</button>
+          <button class="nav-item" data-page="tasks">任务队列</button>
+        </nav>
+
+        <!-- 主题创作 -->
+        <section id="page-topics" class="page active">
+          <div class="grid two">
+            <div class="card">
+              <h3>新建主题</h3>
+              <form id="topic-form" class="form">
+                <label>主题标题 <input type="text" id="topic-title" placeholder="例如：艾尔登法环 1.03 遗物攻略" required /></label>
+                <button type="submit">创建主题</button>
+              </form>
+              <h3>我的主题</h3>
+              <ul id="topic-list" class="list"></ul>
+            </div>
+            <div class="card" id="topic-detail" style="display:none;">
+              <h3 id="detail-title">主题详情</h3>
+              <p class="hint">当前主题 ID：<span id="detail-topic-id"></span></p>
+              <button id="generate-titles-btn">生成标题候选</button>
+              <h4>标题候选</h4>
+              <ul id="title-list" class="list"></ul>
+              <div id="article-panel" style="display:none;">
+                <h4>生成文章</h4>
+                <label class="inline"><input type="checkbox" id="use-rag" /> 使用 RAG 增强</label>
+                <input type="text" id="rag-query" placeholder="RAG 检索关键词（可选）" />
+                <button id="generate-article-btn">生成文章</button>
+                <h4>文章列表</h4>
+                <ul id="article-list" class="list"></ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 文章管理 -->
+        <section id="page-articles" class="page">
+          <div class="grid two">
+            <div class="card">
+              <h3>我的文章</h3>
+              <ul id="all-article-list" class="list"></ul>
+            </div>
+            <div class="card" id="article-detail" style="display:none;">
+              <h3 id="article-detail-title">文章详情</h3>
+              <div id="article-detail-content" class="content-box"></div>
+              <div class="actions">
+                <button id="generate-cover-btn">生成封面图</button>
+                <button id="publish-btn">发布到小红书</button>
+              </div>
+              <div id="cover-result"></div>
+              <div id="publish-result"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RAG 素材库 -->
+        <section id="page-rag" class="page">
+          <div class="grid two">
+            <div class="card">
+              <h3>素材入库</h3>
+              <form id="ingest-form" class="form">
+                <label>素材 ID <input type="number" id="ingest-material-id" value="1" /></label>
+                <label>文本内容 <textarea id="ingest-text" rows="6" placeholder="粘贴想纳入检索的文本..."></textarea></label>
+                <label>标签（逗号分隔）<input type="text" id="ingest-tags" placeholder="攻略, 艾尔登法环" /></label>
+                <button type="submit">入库</button>
+              </form>
+            </div>
+            <div class="card">
+              <h3>向量检索</h3>
+              <form id="search-form" class="form">
+                <label>查询 <input type="text" id="search-q" placeholder="例如：遗物效果" required /></label>
+                <label>Top K <input type="number" id="search-topk" value="5" /></label>
+                <button type="submit">检索</button>
+              </form>
+              <div id="search-result" class="result-box"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 任务队列 -->
+        <section id="page-tasks" class="page">
+          <div class="card">
+            <h3>最近任务</h3>
+            <button id="refresh-tasks-btn">刷新</button>
+            <ul id="task-list" class="list"></ul>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="toast" class="toast"></div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

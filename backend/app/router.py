@@ -15,6 +15,7 @@ from .api import (
     media,
     publish,
     rag,
+    tasks,
     titles,
     topics,
 )
@@ -29,4 +30,5 @@ api_router.include_router(articles.router)
 api_router.include_router(media.router)
 api_router.include_router(materials.router)
 api_router.include_router(rag.router)
+api_router.include_router(tasks.router)
 api_router.include_router(publish.router)

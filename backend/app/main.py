@@ -6,13 +6,14 @@ FastAPI 应用入口。
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import SETTINGS, TORTOISE_ORM
+from .config import BASE_DIR, SETTINGS, TORTOISE_ORM
 from .router import api_router
 
 
@@ -61,7 +62,9 @@ async def lifespan(app: FastAPI):
     from tortoise import Tortoise
 
     _init_sentry()
-    await Tortoise.init(config=TORTOISE_ORM)
+    # _enable_global_fallback=True 让 lifespan 中初始化的 TortoiseContext
+    # 可作为其他请求任务的 fallback，避免 Tortoise-ORM 1.x 跨 task 丢失上下文。
+    await Tortoise.init(config=TORTOISE_ORM, _enable_global_fallback=True)
     await Tortoise.generate_schemas()
     yield
     await Tortoise.close_connections()
@@ -117,6 +120,14 @@ def create_app() -> FastAPI:
 
     UPLOAD_DIR.mkdir(exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
+    # 前端单页应用（开发/演示用）
+    # 同时兼容 Docker 挂载（frontend 在 backend 目录内）与本地开发（frontend 与 backend 同级）
+    frontend_candidates = (BASE_DIR / "frontend", BASE_DIR.parent / "frontend")
+    FRONTEND_DIR = next((p for p in frontend_candidates if p.exists()), None)
+    if FRONTEND_DIR:
+        app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+        app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
     return app
 

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   redis:
     image: redis:7-alpine
@@ -36,7 +34,11 @@ services:
       - postgres
       - redis
     volumes:
+      - ./backend:/app
       - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./frontend:/app/frontend
+      - ./logs:/app/logs
     command: >
       sh -c "aerich upgrade && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
@@ -57,7 +59,11 @@ services:
       - postgres
       - redis
     volumes:
+      - ./backend:/app
       - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./frontend:/app/frontend
+      - ./logs:/app/logs
     command: >
       sh -c "celery -A app.worker worker --loglevel=info"
 
