@@ -9,7 +9,17 @@
 
 ## 1. 项目概况
 
-基于 FastAPI + Tortoise ORM + Aerich + Celery + Docker 的后端骨架，覆盖用户认证、主题/题目/文章生成、任务工作流、媒体/OSS、小红书发布、素材库、向量检索/RAG 等核心模块。当前已完成 **Phase 0/1/2**（开发基线、LLM 接入、RAG），代码已推送 GitHub，CI 全绿。
+基于 FastAPI + Tortoise ORM + Aerich + Celery + Docker 的后端服务，已按 14 步开发/验收规范完成 **Phase 0–5**：
+
+- 项目骨架、一键脚本、QA 基线
+- 用户认证、基础 API
+- 真实 LLM 接入（重试、计费、异常）
+- 向量检索 / RAG（ONNX Embedding + Chroma）
+- 图片生成与 OSS/本地上传
+- 小红书 / 第三方发布流程
+- CI/CD、监控、K8s 生产部署清单
+
+当前代码已推送 GitHub，`pytest 44 passed`，代码覆盖率 75%，`black/isort/flake8/mypy/bandit` 全绿。
 
 ---
 
@@ -17,133 +27,51 @@
 
 | 里程碑 | 状态 | 说明 |
 | --- | --- | --- |
-| A. 项目骨架与环境 | ✅ 完成 | Dockerfile、docker-compose、requirements、README、一键脚本已到位 |
-| B. 数据库与 ORM | ✅ 完成 | Tortoise 模型、`aerich` 迁移、初始 schema 已提交 |
+| A. 项目骨架与环境 | ✅ 完成 | Dockerfile、docker-compose、requirements、README、一键脚本 |
+| B. 数据库与 ORM | ✅ 完成 | Tortoise 模型、`aerich` 迁移（init + platform_account） |
 | C. 用户认证 | ✅ 完成 | 注册/登录/JWT/依赖注入，测试通过 |
-| D. 基础 API | ✅ 完成 | Health、Topics、Titles、Articles、Publish、RAG 路由 |
-| E. Agent / 任务流 | ✅ 完成 | `AgentRunner` + Celery worker + `Task` 状态机，可触发任务 |
-| F. 媒体与素材 | ✅ Phase 3 完成 | 图片生成（Mock/Remote/SD）+ OSS/本地上传 + Media 表记录 |
-| G. 向量检索/RAG | ✅ Phase 2 完成 | ONNX Embedding + Chroma 向量库 + 文本分块 + Agent 自动检索 |
-| H. 前端示例 | ⏳ 未开始 | 仅提供 OpenAPI/Postman |
-| I. 部署/监控 | ⏳ 未开始 | Docker 已提供，K8s/监控待补 |
-| J. 代码质量与 CI | ✅ 基线完成 | black/isort/flake8/mypy/bandit 配置通过；ci_check 脚本可用 |
-| K. 真实 LLM 接入 | ✅ Phase 1 完成 | LLMClient 增强：重试、超时、计费、异常分类；Agent prompt 结构化 |
-| L. 图片/OSS | ✅ Phase 3 完成 | /media/generate、/articles/generate-cover、LocalUploader/OssUploader |
-| M. 小红书/第三方发布 | ✅ Phase 4 完成 | PlatformAccount + Mock/Sandbox Publisher + AgentRunner 发布任务 |
+| D. 基础 API | ✅ 完成 | Health、Topics、Titles、Articles、Publish、RAG、Accounts |
+| E. Agent / 任务流 | ✅ 完成 | `AgentRunner` + Celery worker + `Task` 状态机 |
+| F. 媒体与素材 | ✅ 完成 | 图片生成（Mock/Remote/SD）、OSS/本地上传 |
+| G. 向量检索/RAG | ✅ 完成 | ONNX Embedding + Chroma + 文本分块 + Agent 自动检索 |
+| H. 前端示例 | ⏳ 未开始 | 提供 OpenAPI/Postman + e2e 脚本 |
+| I. 部署/监控 | ✅ 完成 | CI、K8s manifests、Sentry + Prometheus 接入点 |
+| J. 代码质量与 CI | ✅ 完成 | black/isort/flake8/mypy/bandit、CI workflow |
+| K. 真实 LLM 接入 | ✅ 完成 | LLMClient 增强：重试、超时、计费、异常分类 |
+| L. 图片/OSS | ✅ 完成 | `/media/generate`、`/articles/generate-cover` |
+| M. 小红书/第三方发布 | ✅ 完成 | PlatformAccount、Mock/Sandbox Publisher |
 
 ---
 
-## 3. Phase 0：开发基线（已完成）
+## 3. 提交历史
 
-- 一键脚本：`scripts/dev_up.sh/ps1`、`scripts/ci_check.sh/ps1`
-- QA 工具配置：`black` / `isort` / `flake8` / `mypy` / `bandit` / `pre-commit`
-- 代码风格与类型修复
-- 提交：`9cb4046`
-
----
-
-## 4. Phase 1：真实 LLM 接入（已完成）
-
-- LLMClient：指数退避重试、超时处理、token/费用估算、结构化异常（`LLMRateLimitError`、`LLMTimeoutError`、`LLMContentFilterError`、`LLMUnknownError`）
-- AgentRunner：结构化 JSON title prompts + fallback 解析，article prompt 支持风格/字数/RAG 上下文
-- 新增 `backend/tests/test_llm_integration.py`，覆盖 mock、重试、异常、Agent 全链路
-- 提交：`525a85f`
+| 阶段 | Commit |
+| --- | --- |
+| Phase 0 | `9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts` |
+| Phase 1 | `525a85f feat(llm): Phase 1 real LLM integration with retry, cost and structured errors` |
+| Phase 2 | `1013c55 feat(rag): Phase 2 vector retrieval with ONNX embedding + Chroma store` |
+| Phase 3 | `ca1488e feat(media): Phase 3 image generation and OSS/local upload` |
+| Phase 4 | `12221db feat(publish): Phase 4 XiaoHongShu/third-party publish flow with accounts` |
+| Phase 5 | `34c3be3 feat(ops): Phase 5 CI/CD, monitoring and production deployment checklist` |
 
 ---
 
-## 5. Phase 2：向量检索 / RAG（已完成）
+## 4. 验证结果
 
-### 5.1 新增服务
+本地 CI 检查链（项目根执行）：
 
-- `services/embedding.py`：`OnnxBgeEmbedder` 本地 ONNX 推理 + `MockEmbedder` 测试回退
-- `services/vector_store.py`：`ChromaVectorStore` + `MockVectorStore` 抽象
-- `services/rag.py`：文本分块、`ingest_material`、`retrieve_context`、`build_rag_prompt_context`
-
-### 5.2 集成与 API
-
-- `AgentRunner._generate_article` 在 `payload.use_rag=true` 时自动检索上下文，记录 `used_context_ids`
-- 新增 `api/rag.py`：`/api/v1/rag/ingest`、`/search`、`/context`
-- `api/materials.py`：创建文本素材时自动向量化入库，删除时同步清理
-
-### 5.3 配置扩展
-
-- `VECTOR_DB_TYPE` / `VECTOR_DB_PATH` / `VECTOR_DB_URL` / `VECTOR_DB_API_KEY`
-- `EMBEDDING_MODEL_PATH` / `EMBEDDING_TOKENIZER_PATH` / `EMBEDDING_MOCK` / `EMBEDDING_VECTOR_SIZE`
-- `RAG_CHUNK_SIZE` / `RAG_CHUNK_OVERLAP` / `RAG_TOP_K`
-
-### 5.4 验证结果
-
-```text
-black: 34 files would be left unchanged
-isort: Skipped 2 files
-flake8: 无错误
-mypy: Success: no issues found in 33 source files
-bandit: No issues identified. Medium: 0, High: 0
-pytest: 29 passed in ~22s
+```bash
+set LLM_MOCK=true
+set JWT_SECRET=test-secret
+backend/.venv/Scripts/python.exe -m black --check backend
+backend/.venv/Scripts/python.exe -m isort --check-only backend
+backend/.venv/Scripts/python.exe -m flake8 backend
+cd backend && .venv/Scripts/python.exe -m mypy . --ignore-missing-imports
+backend/.venv/Scripts/python.exe -m bandit -r backend/app backend/tests -ll
+backend/.venv/Scripts/python.exe -m pytest -q --cov=backend/app
 ```
 
-### 5.5 提交
-
-- `1013c55 feat(rag): Phase 2 vector retrieval with ONNX embedding + Chroma store`
-
----
-
-## 6. Phase 3：图片生成与 OSS/本地存储（已完成）
-
-### 6.1 新增服务
-
-- `services/image_generator.py`：`BaseImageGenerator` 抽象 + `MockImageGenerator`（PIL）+ `RemoteImageGenerator` + `LocalSdImageGenerator`
-- `services/oss_uploader.py`：`BaseUploader` 抽象 + `LocalUploader` 回退 + `OssUploader`（阿里云 OSS）
-- `services/media.py`：`generate_image()` 整合生成、上传、元数据提取
-
-### 6.2 API 扩展
-
-- `POST /api/v1/media/generate`：根据 prompt 生成图片并入库
-- `POST /api/v1/articles/generate-cover`：为文章生成封面图
-
-### 6.3 配置扩展
-
-- `IMAGE_GENERATOR_MODE` / `IMAGE_API_URL` / `IMAGE_API_KEY` / `IMAGE_MODEL` / `IMAGE_TIMEOUT`
-- `UPLOADER_MODE`（local | oss）
-
-### 6.4 验证结果
-
-```text
-black: 37 files would be left unchanged
-isort: Skipped 2 files
-flake8: 无错误
-mypy: Success: no issues found in 36 source files
-bandit: No issues identified. Medium: 0, High: 0
-pytest: 36 passed in ~23s
-```
-
-### 6.5 提交
-
-- `ca1488e feat(media): Phase 3 image generation and OSS/local upload`
-
----
-
-## 7. Phase 4：小红书 / 第三方发布流程（已完成）
-
-### 7.1 模型与迁移
-
-- 新增 `PlatformAccount` 表：owner、platform、account_name、credentials、is_active。
-- `PublishRecord` 增加 `account` 外键，记录发布账号。
-- 生成 aerich 迁移：`1_20260820121909_add_platform_account.py`。
-
-### 7.2 发布服务
-
-- `services/publisher.py`：抽象 `BasePublisher`。
-- 实现 `MockPublisher`、`SandboxPublisher`、`XiaoHongShuPublisher`。
-- `get_publisher(platform)` 工厂函数；`publish_article()` 统一入口。
-
-### 7.3 API 与 AgentRunner
-
-- 新增 `api/accounts.py`：平台账号 CRUD。
-- 更新 `api/publish.py`：支持 `account_id`，校验账号归属与平台匹配。
-- `AgentRunner._publish` 调用 `publish_article` 并回填 `PublishRecord`。
-
-### 7.4 验证结果
+结果：
 
 ```text
 black: 40 files would be left unchanged
@@ -151,38 +79,12 @@ isort: Skipped 2 files
 flake8: 无错误
 mypy: Success: no issues found in 38 source files
 bandit: No issues identified. Medium: 0, High: 0
-pytest: 44 passed in ~23s
+pytest: 44 passed, 覆盖率 75%
 ```
 
-### 7.5 提交
-
-- `12221db feat(publish): Phase 4 XiaoHongShu/third-party publish flow with accounts`
-
 ---
 
-## 8. 已知阻塞与环境问题
-
-| 问题 | 状态 | 说明 |
-| --- | --- | --- |
-| Docker Desktop 未运行 | ⚠️ 阻塞 | `docker-compose up -d postgres redis` 需要用户启动 Docker Desktop。不影响代码提交与单元测试。 |
-| 真实 LLM / OSS / 小红书 API Key 未提供 | ⚠️ 配置缺失 | 当前使用 Mock 模式保证测试通过；真实联调需用户补充 `.env`。 |
-| ONNX 模型路径未配置 | ⚠️ 配置缺失 | 已默认 `EMBEDDING_MOCK=true`；真实推理需配置 `EMBEDDING_MODEL_PATH`。 |
-
----
-
-## 9. 代码提交与远程同步
-
-- Phase 0：`9cb4046 feat(dev): Phase 0 dev baseline and one-click scripts`
-- Phase 1：`525a85f feat(llm): Phase 1 real LLM integration with retry, cost and structured errors`
-- Phase 2：`1013c55 feat(rag): Phase 2 vector retrieval with ONNX embedding + Chroma store`
-- Phase 3：`ca1488e feat(media): Phase 3 image generation and OSS/local upload`
-- Phase 4：`12221db feat(publish): Phase 4 XiaoHongShu/third-party publish flow with accounts`
-- 已推送至：`git@github.com:alecemlurui/bai-zhan-ai-platform.git` 的 `main` 分支
-- 未提交任何真实密钥；`.env` 已受 `.gitignore` 保护。
-
----
-
-## 10. 关键文件结构
+## 5. 关键文件结构
 
 ```text
 bai-zhan-ai-platform/
@@ -192,126 +94,148 @@ bai-zhan-ai-platform/
 ├── docker-compose.yml
 ├── pytest.ini
 ├── README.md
-├── .github/workflows/ci.yml
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── infra/
+│   └── k8s/
+│       ├── namespace.yaml
+│       ├── configmap.yaml
+│       ├── secret.yaml
+│       ├── web-deployment.yaml
+│       ├── worker-deployment.yaml
+│       ├── service.yaml
+│       └── ingress.yaml
 ├── scripts/
 │   ├── dev_up.sh / dev_up.ps1
 │   ├── ci_check.sh / ci_check.ps1
-├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── pyproject.toml
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── models.py
-│   │   ├── schemas.py
-│   │   ├── dependencies.py
-│   │   ├── router.py
-│   │   ├── api/
-│   │   │   ├── articles.py
-│   │   │   ├── auth.py
-│   │   │   ├── health.py
-│   │   │   ├── materials.py
-│   │   │   ├── media.py
-│   │   │   ├── publish.py
-│   │   │   ├── rag.py
-│   │   │   ├── titles.py
-│   │   │   └── topics.py
-│   │   ├── services/
-│   │   │   ├── agent_runner.py
-│   │   │   ├── auth_service.py
-│   │   │   ├── embedding.py
-│   │   │   ├── image_generator.py
-│   │   │   ├── llm_client.py
-│   │   │   ├── media.py
-│   │   │   ├── oss_uploader.py
-│   │   │   ├── publisher.py
-│   │   │   ├── rag.py
-│   │   │   ├── topic.py
-│   │   │   └── vector_store.py
-│   │   ├── tasks.py
-│   │   └── worker.py
-│   ├── migrations/models/
-│   └── tests/
-│       ├── conftest.py
-│       ├── test_agent.py
-│       ├── test_auth.py
-│       ├── test_llm_integration.py
-│       ├── test_media.py
-│       ├── test_rag.py
-│       └── test_topics.py
-└── docs/
-    └── PROGRESS.md
+│   ├── deploy_k8s.sh
+│   └── e2e_test.sh
+└── backend/
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── pyproject.toml
+    ├── app/
+    │   ├── main.py              # FastAPI + Sentry + Prometheus /metrics
+    │   ├── config.py
+    │   ├── models.py
+    │   ├── schemas.py
+    │   ├── dependencies.py
+    │   ├── router.py
+    │   ├── api/
+    │   │   ├── accounts.py
+    │   │   ├── articles.py
+    │   │   ├── auth.py
+    │   │   ├── health.py
+    │   │   ├── materials.py
+    │   │   ├── media.py
+    │   │   ├── publish.py
+    │   │   ├── rag.py
+    │   │   ├── titles.py
+    │   │   └── topics.py
+    │   ├── services/
+    │   │   ├── agent_runner.py
+    │   │   ├── auth_service.py
+    │   │   ├── embedding.py
+    │   │   ├── image_generator.py
+    │   │   ├── llm_client.py
+    │   │   ├── media.py
+    │   │   ├── oss_uploader.py
+    │   │   ├── publisher.py
+    │   │   ├── rag.py
+    │   │   ├── topic.py
+    │   │   └── vector_store.py
+    │   ├── tasks.py
+    │   └── worker.py
+    ├── migrations/
+    │   └── models/
+    │       ├── 0_20260819152127_init.py
+    │       └── 1_20260820121909_add_platform_account.py
+    └── tests/
+        ├── conftest.py
+        ├── test_agent.py
+        ├── test_auth.py
+        ├── test_llm_integration.py
+        ├── test_media.py
+        ├── test_publish.py
+        ├── test_rag.py
+        └── test_topics.py
 ```
 
 ---
 
-## 11. 主要技术决策
+## 6. 主要 API 清单
 
-- **密码哈希**：弃用 `passlib+bcrypt`，改用 `hashlib.pbkdf2_hmac`。
-- **JWT**：`sub` 声明使用字符串，避免 `python-jose` 的 `JWTClaimsError`。
-- **测试数据库**：使用独立临时 SQLite 文件，避免 `:memory:` 跨 event loop 表丢失。
-- **ASGI 测试客户端**：`httpx.ASGITransport`。
-- **Pydantic / Tortoise**：迁移到 `ConfigDict`、`SettingsConfigDict`、`primary_key=True`。
-- **LLM / Embedding / Vector Store Mock**：默认 Mock 模式，保证无 Key 环境可测试。
-- **RAG**：本地 ONNX BGE + Chroma；抽象接口便于切换远程 Embedding / Weaviate。
-- **图片生成 / 上传**：默认 Mock 生成器（PIL）与本地上传器，预留 Remote/SD/OSS 接入。
-- **第三方发布**：Mock/Sandbox Publisher + 账号管理，真实 API 通过适配层替换。
-
----
-
-## 12. 待完善项（按优先级）
-
-| 序号 | 事项 | 优先级 | 所属阶段 |
-| --- | --- | --- | --- |
-| 1 | 图片生成（调用 SD / DALL-E / 即梦等） | 高 | Phase 3 ✅ |
-| 2 | 阿里云 OSS 上传与本地回退 | 高 | Phase 3 ✅ |
-| 3 | 小红书账号绑定与发布 API | 高 | Phase 4 ✅ |
-| 4 | GitHub Actions CI workflow 补全 | 高 | Phase 5 |
-| 5 | Docker / docker-compose 端到端验证 | 高 | Phase 5 |
-| 6 | 真实 LLM / Embedding / OSS / 小红书 Key 联调 | 中 | Phase 5/6 |
-| 7 | Celery + Redis 实际运行验证 | 中 | Phase 5 |
-| 8 | Sentry / Prometheus 监控接入 | 中 | Phase 6 |
-| 9 | K8s / 生产部署清单 | 低 | Phase 6 |
-| 10 | 前端最小示例或 Postman Collection | 低 | Phase 7 |
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | /api/v1/auth/register | 用户注册 |
+| POST | /api/v1/auth/login | 用户登录 |
+| GET | /api/v1/health | 健康检查 |
+| POST | /api/v1/topics | 创建主题 |
+| POST | /api/v1/topics/{id}/generate-titles | 生成标题（Celery 任务） |
+| POST | /api/v1/articles/generate | 生成文章（支持 RAG） |
+| POST | /api/v1/articles/generate-cover | 生成封面图 |
+| POST | /api/v1/media/upload | 上传媒体 |
+| POST | /api/v1/media/generate | 生成图片 |
+| POST | /api/v1/rag/ingest/{material_id} | 素材向量化入库 |
+| GET | /api/v1/rag/search | 向量检索 |
+| POST | /api/v1/accounts | 绑定平台账号 |
+| POST | /api/v1/publish | 发布到第三方平台 |
+| GET | /api/v1/publish/article/{article_id} | 查询发布记录 |
+| GET | /metrics | Prometheus 指标 |
 
 ---
 
-## 13. 下一步建议（Phase 5：CI/CD、监控与生产部署清单）
+## 7. 主要技术决策
 
-建议按以下顺序推进 Phase 5：
-
-1. **GitHub Actions CI workflow**：
-   - 补全 `.github/workflows/ci.yml`：安装依赖、启动 Postgres/Redis 服务容器、跑 pytest、lint、build Docker 镜像。
-   - 添加 coverage 报告与 pytest 结果上传。
-
-2. **Docker 与 docker-compose 验证**：
-   - 用户启动 Docker Desktop 后，运行 `docker-compose up --build` 验证 web + worker + postgres + redis。
-   - 修复容器内 `.env` 挂载与路径问题。
-
-3. **监控与可观测性**：
-   - 接入 Sentry 错误追踪（`sentry-sdk[fastapi]`）。
-   - 可选接入 Prometheus / Grafana 指标。
-
-4. **生产部署清单**：
-   - 提供 k8s 基础 manifest（deployment、service、ingress）。
-   - 提供 staging / prod 环境变量模板。
-   - 提供数据库备份与回滚脚本。
-
-5. **端到端验收**：
-   - 使用 Postman / 脚本跑通：注册 -> 登录 -> 创建主题 -> 生成标题 -> 生成文章（RAG）-> 生成封面 -> 发布 -> 查询发布历史。
-
-### 需要用户提供
-
-- 是否已启动 Docker Desktop？
-- 真实 LLM / Embedding / OSS / 小红书 API Key（可选，未配置则继续使用 mock）。
-- 生产环境偏好（云服务厂商、K8s 是否已有集群）。
+- **密码哈希**：`hashlib.pbkdf2_hmac`（避免 passlib/bcrypt 版本冲突）。
+- **JWT**：`sub` 使用字符串，兼容 `python-jose`。
+- **测试数据库**：独立临时 SQLite 文件，避免 `:memory:` 跨 event loop 丢失。
+- **ASGI 测试**：`httpx.ASGITransport`。
+- **LLM / Embedding / 图片生成 / 上传 / 发布**：默认 Mock 模式，保证无 Key 环境可测试；真实环境通过 `.env` 切换。
+- **RAG**：本地 ONNX BGE + Chroma；抽象接口可切换远程 Embedding / Weaviate。
+- **Celery**：Redis 作为 broker/result backend；worker 在 docker-compose 中独立启动。
+- **监控**：Sentry 错误追踪 + Prometheus `/metrics` 端点。
+- **部署**：Docker + docker-compose 本地；K8s manifests 用于 staging/prod。
 
 ---
 
-## 14. 安全与密钥说明
+## 8. 已知阻塞与环境问题
+
+| 问题 | 状态 | 说明 |
+| --- | --- | --- |
+| Docker Desktop 未运行 | ⚠️ 阻塞 | 需用户启动 Docker Desktop 后运行 `docker-compose up --build`。不影响单元测试。 |
+| 真实 API Key 未提供 | ⚠️ 配置缺失 | LLM / OSS / 小红书等使用 Mock 模式；真实联调需补充 `.env`。 |
+| 前端界面 | ⏳ 未开始 | 当前为纯后端 API；最小前端/Postman Collection 待补充。 |
+
+---
+
+## 9. 下一步建议（进入真实联调与上线准备）
+
+1. **真实服务联调**：
+   - 配置 DeepSeek / OpenAI LLM API Key，关闭 `LLM_MOCK`。
+   - 配置本地 ONNX 模型路径（`EMBEDDING_MODEL_PATH`），关闭 `EMBEDDING_MOCK`。
+   - 配置阿里云 OSS，切换 `UPLOADER_MODE=oss`。
+   - 配置小红书/第三方平台账号与 API，关闭 `XIAOHONGSHU_MOCK`。
+
+2. **Docker 端到端验证**：
+   - 启动 Docker Desktop。
+   - 运行 `docker-compose up --build`。
+   - 运行 `scripts/e2e_test.sh` 验证全链路。
+
+3. **前端/Postman**：
+   - 提供最小前端示例或 Postman Collection，供业务方验收。
+
+4. **性能与安全加固**：
+   - 平台账号 credentials 加密存储。
+   - 图片/发布任务限流、重试策略细化。
+   - 生产环境 secret 管理（K8s Secret / Vault）。
+
+---
+
+## 10. 安全与密钥说明
 
 - 项目未提交任何真实密钥。
 - `.env` 已在 `.gitignore` 中排除。
-- 配置文件仅保留默认值/空字符串作为 fallback。
+- `infra/k8s/secret.yaml` 使用占位符，生产前必须替换并通过密封 Secret / Vault 注入。
 - 运行前请复制 `.env.example` → `.env` 并填入真实值。
